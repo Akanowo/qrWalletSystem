@@ -11,19 +11,19 @@ const {
 const sendMail = require('../utils/sendMail');
 const { createWallet } = require('../utils/wallet');
 const Wallet = require('../models/Wallet');
+const QrCode = require('../models/Qrcode');
 
 const controllers = () => {
 	const handleLogin = asyncHandler(async (req, res, next) => {
-		const { email, password } = req.body;
+		const { email, password, type } = req.body;
 
 		const query = {
 			email,
 			emailConfirmed: true,
+			type,
 		};
 
-		const user = await User.findOne(query).select(
-			'firstName lastName email type emailConfirmed password'
-		);
+		const user = await User.findOne(query);
 
 		if (!user) {
 			return next(new ErrorResponse('invalid email or password', 401));
@@ -43,6 +43,14 @@ const controllers = () => {
 			'address balance'
 		);
 
+		// get user's qrcode if user is a vendor
+		let qrcode;
+		if (user.type === 'vendor') {
+			qrcode = await QrCode.findOne({ wallet_id: walletDetails._id }).select(
+				'url qrcode_id wallet_id'
+			);
+		}
+
 		// generate accessToken
 		const token = generateAccessToken(user._id);
 
@@ -53,6 +61,7 @@ const controllers = () => {
 
 		const userData = { ...user._doc };
 		delete userData.password;
+		delete userData.createdAt;
 
 		return res.status(200).json({
 			status: true,
@@ -60,6 +69,7 @@ const controllers = () => {
 			data: {
 				user: userData,
 				walletDetails,
+				qrcode,
 			},
 		});
 	});
@@ -84,7 +94,7 @@ const controllers = () => {
 		const newUser = await User.create(userData);
 
 		// create user wallet
-		const userWallet = await createWallet(newUser._id);
+		const userWallet = await createWallet(newUser._id, newUser.type);
 
 		// TODO: Send user email confirmation link
 		const verificationToken = generateEmailVeifyToken(newUser._id);

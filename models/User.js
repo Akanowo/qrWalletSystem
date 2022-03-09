@@ -22,6 +22,7 @@ const userSchema = new Schema({
 		required: true,
 		match:
 			/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+		unique: true,
 	},
 	emailConfirmed: {
 		type: Boolean,
@@ -37,6 +38,7 @@ const userSchema = new Schema({
 		enum: ['customer', 'vendor'],
 		required: true,
 	},
+	vendorName: String,
 	createdAt: {
 		type: Date,
 		default: Date.now,
