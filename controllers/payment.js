@@ -430,7 +430,7 @@ const controllers = () => {
 		const wallet = await Wallet.findOne({ user_id: req.user._id });
 		const transactionData = {
 			wallet_id: wallet._id,
-			amount: response.meta.transfer_amount,
+			amount: Number.parseInt(response.meta.authorization.transfer_amount),
 			type: 'topup',
 			status: 'pending',
 			tx_ref: payload.tx_ref,
