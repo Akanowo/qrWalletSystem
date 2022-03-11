@@ -9,7 +9,7 @@ const { transactionVerificationPing } = require('../utils/cronJobs');
 
 const controllers = () => {
 	const handleTopup = asyncHandler(async (req, res, next) => {
-		console.log(req.user);
+		const charge = Math.round((1.4 / 100) * req.body.amount);
 		const redisClient = await redisConnect();
 		// create payload
 		const payload = {
@@ -18,7 +18,7 @@ const controllers = () => {
 			expiry_month: req.body.expiry_month,
 			expiry_year: req.body.expiry_year,
 			currency: 'NGN',
-			amount: req.body.amount,
+			amount: req.body.amount + charge,
 			email: req.user.email,
 			fullname: `${req.user.firstName} ${req.user.lastName}`,
 			enckey: process.env.FLW_ENC_KEY,
@@ -42,6 +42,7 @@ const controllers = () => {
 						`${req.user._id}-auth_fields`,
 						JSON.stringify(response.meta.authorization.fields)
 					)
+					.set(`${req.user._id}-flw_charge`, charge)
 					.set(`${req.user._id}-auth_mode`, response.meta.authorization.mode)
 					.exec();
 
@@ -57,6 +58,7 @@ const controllers = () => {
 					`txRef-${response.data.tx_ref}`,
 					response.data.id
 				);
+				await redisClient.set(`${req.user._id}-flw_charge`, charge);
 				return res.status(200).json({
 					status: true,
 					message: 'redirect required',
@@ -89,7 +91,7 @@ const controllers = () => {
 						[
 							{
 								$set: {
-									balance: { $add: ['$balance', payload.amount] },
+									balance: { $add: ['$balance', payload.amount - charge] },
 								},
 							},
 						],
@@ -111,7 +113,7 @@ const controllers = () => {
 					const savedTransaction = await Transaction.create(transactionData);
 
 					// add to cronjob
-					transactionVerificationPing(transaction.data.id);
+					transactionVerificationPing(transaction.data.id, req.user._id);
 					return res.status(200).json({
 						status: true,
 						message: 'payment pending',
@@ -189,6 +191,10 @@ const controllers = () => {
 					};
 					const savedTransaction = await Transaction.create(transactionData);
 
+					const charge = Number.parseInt(
+						await redisClient.get(`${req.user._id}-flw_charge`)
+					);
+
 					// update user's wallet balance
 					const walletUpdate = await Wallet.updateOne(
 						{
@@ -197,7 +203,9 @@ const controllers = () => {
 						[
 							{
 								$set: {
-									balance: { $add: ['$balance', transaction.data.amount] },
+									balance: {
+										$add: ['$balance', transaction.data.amount - charge],
+									},
 								},
 							},
 						],
@@ -219,7 +227,7 @@ const controllers = () => {
 					const savedTransaction = await Transaction.create(transactionData);
 
 					// add to cronjob
-					transactionVerificationPing(transaction.data.id);
+					transactionVerificationPing(transaction.data.id, req.user._id);
 					return res.status(200).json({
 						status: true,
 						message: 'payment pending',
@@ -263,6 +271,12 @@ const controllers = () => {
 				};
 				const savedTransaction = await Transaction.create(transactionData);
 
+				const charge = Number.parseInt(
+					await redisClient.get(`${req.user._id}-flw_charge`)
+				);
+
+				console.log(charge);
+
 				// update user's wallet balance
 				const walletUpdate = await Wallet.updateOne(
 					{
@@ -271,7 +285,9 @@ const controllers = () => {
 					[
 						{
 							$set: {
-								balance: { $add: ['$balance', transaction.data.amount] },
+								balance: {
+									$add: ['$balance', transaction.data.amount - charge],
+								},
 							},
 						},
 					],
@@ -293,7 +309,7 @@ const controllers = () => {
 				const savedTransaction = await Transaction.create(transactionData);
 
 				// add to cronjob
-				transactionVerificationPing(transaction.data.id);
+				transactionVerificationPing(transaction.data.id, req.user._id);
 				return res.status(200).json({
 					status: true,
 					message: 'payment pending',
@@ -338,6 +354,9 @@ const controllers = () => {
 				};
 				const savedTransaction = await Transaction.create(transactionData);
 
+				const charge = Number.parseInt(
+					await redisClient.get(`${req.user._id}-flw_charge`)
+				);
 				// update user's wallet balance
 				const walletUpdate = await Wallet.updateOne(
 					{
@@ -346,7 +365,9 @@ const controllers = () => {
 					[
 						{
 							$set: {
-								balance: { $add: ['$balance', transaction.data.amount] },
+								balance: {
+									$add: ['$balance', transaction.data.amount - charge],
+								},
 							},
 						},
 					],
@@ -368,7 +389,7 @@ const controllers = () => {
 				const savedTransaction = await Transaction.create(transactionData);
 
 				// add to cronjob
-				transactionVerificationPing(transaction.data.id);
+				transactionVerificationPing(transaction.data.id, req.user._id);
 				return res.status(200).json({
 					status: true,
 					message: 'payment pending',
@@ -384,6 +405,80 @@ const controllers = () => {
 		}
 
 		return res.redirect('/payment-failed');
+	});
+
+	const handleTopupTransfer = asyncHandler(async (req, res, next) => {
+		const charge = Math.round((1.4 / 100) * Number.parseInt(req.body.amount));
+		const payload = {
+			tx_ref: `FWL-${uuid()}`,
+			amount: req.body.amount + charge,
+			email: req.user.email,
+			currency: 'NGN',
+		};
+
+		const response = await flwClient.Charge.bank_transfer(payload);
+
+		if (response?.status !== 'success') {
+			return next(new ErrorResponse(response.message, 400));
+		}
+
+		// save transaction
+		const wallet = await Wallet.findOne({ user_id: req.user._id });
+		const transactionData = {
+			wallet_id: wallet._id,
+			amount: response.meta.transfer_amount,
+			type: 'topup',
+			status: 'pending',
+			tx_ref: payload.tx_ref,
+			meta: {
+				originatoraccountnumber: response.data.transfer_account,
+				bankname: response.data.transfer_bank,
+			},
+		};
+		const savedTransaction = await Transaction.create(transactionData);
+
+		return res.status(200).json({
+			status: true,
+			message: 'charge initiated',
+			data: response.meta.authorization,
+		});
+	});
+
+	const handleTopupUssd = asyncHandler(async (req, res, next) => {
+		// const charge = Math.round((1.4 / 100) * req.body.amount);
+
+		const payload = {
+			account_bank: req.body.account_bank_code,
+			amount: req.body.amount,
+			currency: 'NGN',
+			email: req.user.email,
+			tx_ref: `FWL-${uuid()}`,
+			fullname: `${req.user.firstName} ${req.user.lastName}`,
+		};
+
+		const response = await flwClient.Charge.ussd(payload);
+
+		if (response.status !== 'success') {
+			return next(new ErrorResponse(response.message, 400));
+		}
+
+		// save transaction to db
+		const wallet = await Wallet.findOne({ user_id: req.user._id });
+		const transactionData = {
+			type: 'topup',
+			wallet_id: wallet._id,
+			...response.data,
+		};
+		const savedTransaction = await Transaction.create(transactionData);
+
+		return res.status(200).json({
+			status: true,
+			message: `Please dial ${response.meta.authorization.note} to complete the transaction.`,
+			data: {
+				ussdCode: response.meta.authorization.note,
+				paymentCode: response.data.payment_code,
+			},
+		});
 	});
 
 	const handleTransfer = asyncHandler(async (req, res, next) => {
@@ -480,6 +575,8 @@ const controllers = () => {
 		handleTopupAuthorization,
 		handleTopupRedirect,
 		handleTopupValidation,
+		handleTopupTransfer,
+		handleTopupUssd,
 		handleTransfer,
 		handleWithdrawal,
 	};

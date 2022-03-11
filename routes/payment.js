@@ -4,6 +4,8 @@ const {
 	handleTopupAuthorization,
 	handleTopupRedirect,
 	handleTopupValidation,
+	handleTopupTransfer,
+	handleTopupUssd,
 	handleTransfer,
 	handleWithdrawal,
 } = require('../controllers/payment');
@@ -12,6 +14,8 @@ router.route('/topup/charge').post(handleTopup);
 router.route('/topup/authorize').post(handleTopupAuthorization);
 router.route('/topup/validate').post(handleTopupValidation);
 router.route('/topup/redirect').get(handleTopupRedirect);
+router.route('/topup/transfer').post(handleTopupTransfer);
+router.route('/topup/ussd').post(handleTopupUssd);
 router.route('/transfer').post(handleTransfer);
 router.route('/withdraw').post(handleWithdrawal);
 
