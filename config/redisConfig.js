@@ -1,7 +1,12 @@
 const { createClient } = require('redis');
 
 module.exports = async () => {
-	const client = createClient();
+	let client;
+	if (process.env.NODE_ENV === 'production') {
+		client = createClient({ url: process.env.REDIS_URL });
+	} else {
+		client = createClient();
+	}
 
 	client.on('error', (err) => console.log('Redis Client Error', err));
 
