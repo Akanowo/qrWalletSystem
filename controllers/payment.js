@@ -420,6 +420,8 @@ const controllers = () => {
 
 		const response = await flwClient.Charge.bank_transfer(payload);
 
+		console.log('TOPUP TRANSFER RESPONSE: ', response);
+
 		if (response?.status !== 'success') {
 			return next(new ErrorResponse(response.message, 400));
 		}
@@ -459,6 +461,8 @@ const controllers = () => {
 		};
 
 		const response = await flwClient.Charge.ussd(payload);
+
+		console.log('TOPUP USSD RESPONSE: ', response);
 
 		if (response.status !== 'success') {
 			return next(new ErrorResponse(response.message, 400));

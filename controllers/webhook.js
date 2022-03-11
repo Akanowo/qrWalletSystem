@@ -34,6 +34,7 @@ const handleWebhookTransaction = asyncHandler(async (req, res, next) => {
 	const savedTransaction = await Transaction.findOne(query);
 
 	if (savedTransaction && savedTransaction.status === transaction.data.status) {
+		console.log('WEBHOOK: TRANSACTION ALREADY HANDLED!!');
 		return res.status(200).end();
 	}
 
