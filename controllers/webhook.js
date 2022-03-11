@@ -20,7 +20,9 @@ const handleWebhookTransaction = asyncHandler(async (req, res, next) => {
 	// handle webhook notification
 
 	// verify transaction
-	const transaction = await flwClient.Transaction.verify(payload.data.id);
+	const transaction = await flwClient.Transaction.verify({
+		id: payload.data.id,
+	});
 
 	// get transaction in db
 	const query = {
