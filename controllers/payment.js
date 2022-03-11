@@ -151,6 +151,8 @@ const controllers = () => {
 
 		const response = await flwClient.Charge.card(payload);
 
+		console.log('Authorization response', response);
+
 		console.log('TXT REF: ', response.data.tx_ref);
 
 		switch (response?.meta?.authorization?.mode) {
