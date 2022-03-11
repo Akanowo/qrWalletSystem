@@ -435,8 +435,8 @@ const controllers = () => {
 			status: 'pending',
 			tx_ref: payload.tx_ref,
 			meta: {
-				originatoraccountnumber: response.data.transfer_account,
-				bankname: response.data.transfer_bank,
+				originatoraccountnumber: response.meta.authorization.transfer_account,
+				bankname: response.meta.authorization.transfer_bank,
 			},
 		};
 		const savedTransaction = await Transaction.create(transactionData);
