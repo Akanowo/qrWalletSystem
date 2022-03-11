@@ -20,14 +20,13 @@ const { Schema, Types, model } = mongoose;
 
 const transactionSchema = new Schema(
 	{
-		transaction_id: String,
+		id: String,
 		type: {
 			type: String,
-			enum: ['topup', 'transfer', 'withdrawal'],
+			enum: ['topup', 'transfer', 'withdraw'],
 		},
 		status: {
 			type: String,
-			enum: ['successful', 'pending', 'failed'],
 			required: true,
 		},
 		wallet_id: {

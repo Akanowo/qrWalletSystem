@@ -77,7 +77,7 @@ const controllers = () => {
 					// create transaction in db
 					const transactionData = {
 						type: 'topup',
-						transaction_id: transaction.data.id,
+						operation: 'credit',
 						wallet_id: wallet._id,
 						...transaction.data,
 					};
@@ -106,7 +106,7 @@ const controllers = () => {
 				} else if (transaction.status === 'pending') {
 					const transactionData = {
 						type: 'topup',
-						transaction_id: transaction.data.id,
+						operation: 'credit',
 						wallet_id: wallet._id,
 						...transaction,
 					};
@@ -187,7 +187,7 @@ const controllers = () => {
 					// create transaction in db
 					const transactionData = {
 						type: 'topup',
-						transaction_id: transaction.data.id,
+						operation: 'credit',
 						wallet_id: wallet._id,
 						...transaction.data,
 					};
@@ -222,7 +222,6 @@ const controllers = () => {
 				} else if (transaction.data.status == 'pending') {
 					const transactionData = {
 						type: 'topup',
-						transaction_id: transaction.data.id,
 						wallet_id: wallet._id,
 						...transaction,
 					};
@@ -251,6 +250,9 @@ const controllers = () => {
 			otp: req.body.otp,
 			flw_ref: await redisClient.get(`${req.user._id}-flw_ref`),
 		});
+
+		console.log(response);
+
 		if (
 			response.data.status === 'successful' ||
 			response.data.status === 'pending'
@@ -261,13 +263,15 @@ const controllers = () => {
 				id: transactionId,
 			});
 
+			console.log('VERIFIED TRANSACTION: ', transaction);
+
 			const wallet = await Wallet.findOne({ user_id: req.user._id });
 
 			if (transaction.data.status == 'successful') {
 				// create transaction in db
 				const transactionData = {
 					type: 'topup',
-					transaction_id: transaction.data.id,
+					operation: 'credit',
 					wallet_id: wallet._id,
 					...transaction.data,
 				};
@@ -304,7 +308,7 @@ const controllers = () => {
 			} else if (transaction.data.status == 'pending') {
 				const transactionData = {
 					type: 'topup',
-					transaction_id: transaction.data.id,
+					operation: 'credit',
 					wallet_id: wallet._id,
 					...transaction,
 				};
@@ -350,7 +354,7 @@ const controllers = () => {
 				// create transaction in db
 				const transactionData = {
 					type: 'topup',
-					transaction_id: transaction.data.id,
+					operation: 'credit',
 					wallet_id: wallet._id,
 					...transaction.data,
 				};
@@ -384,7 +388,7 @@ const controllers = () => {
 			} else if (transaction.data.status == 'pending') {
 				const transactionData = {
 					type: 'topup',
-					transaction_id: transaction.data.id,
+					operation: 'credit',
 					wallet_id: wallet._id,
 					...transaction,
 				};
@@ -432,6 +436,7 @@ const controllers = () => {
 			wallet_id: wallet._id,
 			amount: Number.parseInt(response.meta.authorization.transfer_amount),
 			type: 'topup',
+			operation: 'credit',
 			status: 'pending',
 			tx_ref: payload.tx_ref,
 			meta: {
@@ -465,13 +470,14 @@ const controllers = () => {
 		console.log('TOPUP USSD RESPONSE: ', response);
 
 		if (response.status !== 'success') {
-			return next(new ErrorResponse(response.message, 400));
+			return next(new ErrorResponse(response.message, 422));
 		}
 
 		// save transaction to db
 		const wallet = await Wallet.findOne({ user_id: req.user._id });
 		const transactionData = {
 			type: 'topup',
+			operation: 'credit',
 			wallet_id: wallet._id,
 			...response.data,
 		};
@@ -499,6 +505,9 @@ const controllers = () => {
 
 		// find sender's wallet
 		const senderWallet = await Wallet.findOne({ user_id: _id });
+
+		// find receiver's wallet
+		const receiverWallet = await Wallet.findOne({ address });
 
 		console.log('Sender wallet', senderWallet);
 
@@ -560,6 +569,29 @@ const controllers = () => {
 			return next(new ErrorResponse('invalid wallet address', 403));
 		}
 
+		// create transaction
+		const transactionData = [
+			{
+				type: 'transfer',
+				operation: 'debit',
+				status: 'successful',
+				id: uuid(),
+				wallet_id: senderWallet._id,
+				amount,
+				currency: 'NGN',
+			},
+			{
+				type: 'transfer',
+				operation: 'credit',
+				status: 'successful',
+				id: uuid(),
+				wallet_id: receiverWallet._id,
+				amount,
+				currency: 'NGN',
+			},
+		];
+		const savedTransaction = await Transaction.insertMany(transactionData);
+
 		return res.status(200).json({
 			status: true,
 			message: 'transfer successful',
@@ -570,9 +602,36 @@ const controllers = () => {
 	});
 
 	const handleWithdrawal = asyncHandler(async (req, res, next) => {
+		const payload = {
+			account_bank: req.body.account_bank,
+			account_number: req.body.account_number,
+			amount: Number.parseInt(req.body.amount),
+			narration: 'Withdrawal',
+			currency: 'NGN',
+			reference: `FWL-${uuid()}`,
+			callback_url: process.env.WEBHOOK_URL,
+			debit_currency: 'NGN',
+		};
+
+		const response = await flwClient.Transfer.initiate(payload);
+
+		if (response.status !== 'success') {
+			return next(new ErrorResponse(response.message, 422));
+		}
+
+		// save transaction in db
+		const wallet = await Wallet.findOne({ user_id: req.user._id });
+		const transactionData = {
+			wallet_id: wallet._id,
+			type: 'withdraw',
+			...response.data,
+		};
+		const savedTransaction = await Transaction.create(transactionData);
+
 		return res.status(200).json({
 			status: true,
-			message: 'You have reached the withdraw endpoint',
+			message: 'Withdrawal queued successfully',
+			data: response.data,
 		});
 	});
 

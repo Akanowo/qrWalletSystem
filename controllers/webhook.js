@@ -24,6 +24,15 @@ const handleWebhookTransaction = asyncHandler(async (req, res, next) => {
 		id: payload.data.id,
 	});
 
+	if (
+		transaction.data.status === 'successful' &&
+		transaction.data.amount !== payload.data.amount &&
+		transaction.data.currency !== payload.data.currency
+	) {
+		console.log('ACTUAL VALUES DOES NOT EQUAL EXPECTED VALUES');
+		return res.status(200).end();
+	}
+
 	// get transaction in db
 	const query = {
 		$or: [
@@ -47,38 +56,94 @@ const handleWebhookTransaction = asyncHandler(async (req, res, next) => {
 
 	switch (payload.event) {
 		case 'charge.completed':
-			// update user's wallet
-			const walletUpdate = await Wallet.updateOne(
-				{ _id: savedTransaction.wallet_id },
-				[
-					{
-						$set: {
-							balance: {
-								$add: [
-									'$balance',
-									Number.parseInt(payload.data.amount) - charge,
-								],
+			if (transaction.data.status.toLowerCase() === 'successful') {
+				// update user's wallet
+				const walletUpdate = await Wallet.updateOne(
+					{ _id: savedTransaction.wallet_id },
+					[
+						{
+							$set: {
+								balance: {
+									$add: [
+										'$balance',
+										Number.parseInt(payload.data.amount) - charge,
+									],
+								},
 							},
 						},
-					},
-				]
-			);
+					]
+				);
 
-			// update transaction in db
-			const transactionUpdate = await Transaction.findByIdAndUpdate(
-				savedTransaction._id,
-				{
-					$set: {
-						...transaction.data,
-					},
-				}
-			);
+				// update transaction in db
+				const transactionUpdate = await Transaction.findByIdAndUpdate(
+					savedTransaction._id,
+					{
+						$set: {
+							...transaction.data,
+						},
+					}
+				);
 
-			console.log('Wallet Update', walletUpdate);
-			console.log('Transaction Update', transactionUpdate);
+				// TODO: Create notification
 
-			return res.status(200).end();
+				console.log('Wallet Update', walletUpdate);
+				console.log('Transaction Update', transactionUpdate);
 
+				return res.status(200).end();
+			} else {
+				console.log('TRANSACTION FAILED!!');
+				// TODO: Create notification
+				return res.status(200).end();
+			}
+
+		case 'transfer.completed':
+			if (transaction.data.status.toLowerCase() === 'successful') {
+				// update user's wallet
+				const walletUpdate = await Wallet.updateOne(
+					{ _id: savedTransaction.wallet_id },
+					[
+						{
+							$set: {
+								balance: {
+									$subtract: ['$balance', Number.parseInt(payload.data.amount)],
+								},
+							},
+						},
+					]
+				);
+
+				// update transaction in db
+				const transactionUpdate = await Transaction.findByIdAndUpdate(
+					savedTransaction._id,
+					{
+						$set: {
+							...transaction.data,
+						},
+					}
+				);
+
+				// TODO: Create notification
+
+				console.log('Wallet Update', walletUpdate);
+				console.log('Transaction Update', transactionUpdate);
+
+				return res.status(200).end();
+			} else {
+				// TODO: Create notification
+				console.log('TRANSACTION FAILED!!');
+				// update transaction in db
+				const transactionUpdate = await Transaction.findByIdAndUpdate(
+					savedTransaction._id,
+					{
+						$set: {
+							...transaction.data,
+						},
+					}
+				);
+
+				console.log('Transaction Update', transactionUpdate);
+				return res.status(200).end();
+			}
 		default:
 			return res.status(200).end();
 	}
