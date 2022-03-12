@@ -36,7 +36,7 @@ module.exports = asyncHandler(async (req, res, next) => {
 	}
 
 	const user = await User.findById(payload.user_id).select(
-		'firstName lastName email user_id'
+		'firstName lastName email user_id type vendorName'
 	);
 
 	if (!user) {

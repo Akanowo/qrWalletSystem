@@ -9,7 +9,7 @@ const { transactionVerificationPing } = require('../utils/cronJobs');
 
 const controllers = () => {
 	const handleTopup = asyncHandler(async (req, res, next) => {
-		const charge = Math.round((1.4 / 100) * req.body.amount);
+		const charge = Math.round((1.42 / 100) * req.body.amount);
 		const redisClient = await redisConnect();
 		// create payload
 		const payload = {
@@ -162,6 +162,10 @@ const controllers = () => {
 				return res.status(200).json({
 					status: true,
 					message: 'otp required',
+					data: {
+						fields: ['otp'],
+						...response.meta.authorization,
+					},
 				});
 			case 'redirect':
 				await redisClient.set(
@@ -596,7 +600,8 @@ const controllers = () => {
 			status: true,
 			message: 'transfer successful',
 			data: {
-				senderBalance: senderWallet.balance - amount,
+				transaction: savedTransaction[0],
+				balance: senderWallet.balance - amount,
 			},
 		});
 	});

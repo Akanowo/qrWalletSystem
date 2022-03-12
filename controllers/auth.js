@@ -12,15 +12,15 @@ const sendMail = require('../utils/sendMail');
 const { createWallet } = require('../utils/wallet');
 const Wallet = require('../models/Wallet');
 const QrCode = require('../models/Qrcode');
+const Transaction = require('../models/Transaction');
 
 const controllers = () => {
 	const handleLogin = asyncHandler(async (req, res, next) => {
-		const { email, password, type } = req.body;
+		const { email, password } = req.body;
 
 		const query = {
 			email,
 			emailConfirmed: true,
-			type,
 		};
 
 		const user = await User.findOne(query);
@@ -156,10 +156,47 @@ const controllers = () => {
 		});
 	});
 
+	const logout = asyncHandler(async (req, res, next) => {
+		res.cookie('access', '', {
+			maxAge: 0,
+			path: '/',
+		});
+		return res.status(200).end();
+	});
+
+	const getProfile = asyncHandler(async (req, res, next) => {
+		const { type, _id } = req.user;
+
+		const wallet = await Wallet.findOne({ user_id: _id });
+
+		const transactions = await Transaction.find({
+			wallet_id: wallet._id,
+			status: 'successful',
+		});
+
+		let qrcode;
+
+		if (type === 'vender') {
+			qrcode = await QrCode.findOne({ wallet_id: walletDetails._id });
+		}
+
+		return res.status(200).json({
+			status: true,
+			data: {
+				user: req.user,
+				wallet,
+				qrcode,
+				transactions,
+			},
+		});
+	});
+
 	return {
 		handleLogin,
 		handleSignUp,
 		verifyEmail,
+		getProfile,
+		logout,
 	};
 };
 

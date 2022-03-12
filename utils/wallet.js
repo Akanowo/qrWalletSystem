@@ -17,13 +17,13 @@ const createWallet = async (user_id, type) => {
 	const wallet = await Wallet.create(walletData);
 
 	if (type === 'vendor') {
-		await generateQrCode(wallet.address);
+		await generateQrCode(wallet.address, wallet._id);
 	}
 
 	return wallet.address;
 };
 
-const generateQrCode = async (address) => {
+const generateQrCode = async (address, wallet_id) => {
 	// generate wallet qr code
 	const qrCodeUrl = await QrCode.toDataURL(address, {
 		type: 'image/png',
@@ -32,7 +32,7 @@ const generateQrCode = async (address) => {
 	const qrCodeData = {
 		qrcode_id: uuid(),
 		url: qrCodeUrl,
-		wallet_id: wallet._id,
+		wallet_id,
 	};
 
 	const qrcode = await QrcodeModel.create(qrCodeData);
