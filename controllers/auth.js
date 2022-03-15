@@ -58,6 +58,12 @@ const controllers = () => {
 		res.cookie('access', token, {
 			maxAge: 604800000,
 			httpOnly: true,
+			sameSite: 'lax',
+			secure: true,
+			domain:
+				process.env.NODE_ENV === 'production'
+					? 'qrwalletpay.netlify.app'
+					: undefined,
 		});
 
 		const userData = { ...user._doc };
