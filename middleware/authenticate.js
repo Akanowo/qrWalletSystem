@@ -6,6 +6,8 @@ const asyncHandler = require('./async');
 module.exports = asyncHandler(async (req, res, next) => {
 	const { cookies } = req;
 
+	console.log(cookies);
+
 	if (!cookies) {
 		return next(new ErrorResponse('UNAUTHORIZED', 403));
 	}
