@@ -60,7 +60,10 @@ const controllers = () => {
 			httpOnly: true,
 			sameSite: 'lax',
 			secure: true,
-			domain: process.env.NODE_ENV === 'production' ? 'netlify.app' : undefined,
+			domain:
+				process.env.NODE_ENV.trim() === 'production'
+					? 'netlify.app'
+					: undefined,
 		});
 
 		const userData = { ...user._doc };
