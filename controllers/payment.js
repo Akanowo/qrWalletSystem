@@ -9,7 +9,7 @@ const { transactionVerificationPing } = require('../utils/cronJobs');
 
 const controllers = () => {
 	const handleTopup = asyncHandler(async (req, res, next) => {
-		const charge = Math.round((1.42 / 100) * req.body.amount);
+		const charge = (1.42 / 100) * req.body.amount;
 		const redisClient = await redisConnect();
 		// create payload
 		const payload = {

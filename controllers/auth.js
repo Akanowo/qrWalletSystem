@@ -13,6 +13,7 @@ const { createWallet } = require('../utils/wallet');
 const Wallet = require('../models/Wallet');
 const QrCode = require('../models/Qrcode');
 const Transaction = require('../models/Transaction');
+const Account = require('../models/Account');
 
 const controllers = () => {
 	const handleLogin = asyncHandler(async (req, res, next) => {
@@ -174,6 +175,8 @@ const controllers = () => {
 			status: 'successful',
 		});
 
+		const account = await Account.findOne({ wallet_id: wallet._id });
+
 		let qrcode;
 
 		if (type === 'vender') {
@@ -187,6 +190,7 @@ const controllers = () => {
 				wallet,
 				qrcode,
 				transactions,
+				account,
 			},
 		});
 	});
