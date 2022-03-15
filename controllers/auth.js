@@ -101,7 +101,7 @@ const controllers = () => {
 
 		// TODO: Send user email confirmation link
 		const verificationToken = generateEmailVeifyToken(newUser._id);
-		const verificationLink = `https://fari-wallet-system.com/verify-email?token=${verificationToken}`;
+		const verificationLink = `https://qrwalletpay.netlify.app/verify-email?token=${verificationToken}`;
 		sendMail(userData.email, verificationLink);
 
 		return res.status(201).json({
@@ -181,8 +181,8 @@ const controllers = () => {
 
 		let qrcode;
 
-		if (type === 'vender') {
-			qrcode = await QrCode.findOne({ wallet_id: walletDetails._id });
+		if (type === 'vendor') {
+			qrcode = await QrCode.findOne({ wallet_id: wallet._id });
 		}
 
 		return res.status(200).json({
