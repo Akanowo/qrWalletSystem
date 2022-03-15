@@ -58,12 +58,8 @@ const controllers = () => {
 		res.cookie('access', token, {
 			maxAge: 604800000,
 			httpOnly: true,
-			sameSite: 'lax',
+			sameSite: 'none',
 			secure: true,
-			domain:
-				process.env.NODE_ENV.trim() === 'production'
-					? 'netlify.app'
-					: undefined,
 		});
 
 		const userData = { ...user._doc };
