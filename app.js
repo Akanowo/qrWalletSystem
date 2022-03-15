@@ -20,7 +20,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(
 	cors({
-		origin: 'http://localhost:3000',
+		origin:
+			process.env.NODE_ENV.trim() === 'production'
+				? 'https://qrwalletpay.netlify.app'
+				: 'http://localhost:3000',
 		credentials: true,
 	})
 );
