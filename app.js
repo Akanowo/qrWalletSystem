@@ -18,18 +18,28 @@ const port = process.env.PORT || 8080;
 // app configuration
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+const whitelist = [
+	'http://localhost:3000',
+	'http://192.168.0.170:3000',
+	'https://qrwalletpay.netlify.app',
+];
+
 app.use(
 	cors({
-		origin:
-			process.env.NODE_ENV.trim() === 'production'
-				? 'https://qrwalletpay.netlify.app'
-				: 'http://localhost:3000',
+		origin: function (origin, callback) {
+			if (whitelist.indexOf(origin) !== -1) {
+				callback(null, true);
+			} else {
+				callback(new Error('Not allowed by CORS'));
+			}
+		},
 		credentials: true,
 	})
 );
 app.use(cookieParser());
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV.trim() === 'production') {
 	app.use(helmet());
 }
 

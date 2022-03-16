@@ -37,9 +37,13 @@ module.exports = asyncHandler(async (req, res, next) => {
 		return next(new ErrorResponse('An unexpected error occured', 500));
 	}
 
+	console.log(payload);
+
 	const user = await User.findById(payload.user_id).select(
 		'firstName lastName email user_id type vendorName'
 	);
+
+	console.log(user);
 
 	if (!user) {
 		return next(new ErrorResponse('UNAUTHORIZED', 401));

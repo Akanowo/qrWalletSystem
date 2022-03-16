@@ -58,7 +58,7 @@ const controllers = () => {
 		res.cookie('access', token, {
 			maxAge: 604800000,
 			httpOnly: true,
-			sameSite: 'none',
+			sameSite: 'lax',
 			secure: true,
 		});
 

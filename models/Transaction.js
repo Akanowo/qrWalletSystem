@@ -52,6 +52,8 @@ const transactionSchema = new Schema(
 		ip: String,
 		narration: String,
 		payment_type: String,
+		to: Types.ObjectId,
+		from: Types.ObjectId,
 		created_at: {
 			type: Date,
 			default: Date.now,

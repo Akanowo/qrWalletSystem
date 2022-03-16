@@ -2,7 +2,7 @@ const { createClient } = require('redis');
 
 module.exports = async () => {
 	let client;
-	if (process.env.NODE_ENV === 'production') {
+	if (process.env.NODE_ENV.trim() === 'production') {
 		client = createClient({ url: process.env.REDIS_URL });
 	} else {
 		client = createClient();

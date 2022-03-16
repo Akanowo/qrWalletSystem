@@ -508,10 +508,14 @@ const controllers = () => {
 		}
 
 		// find sender's wallet
-		const senderWallet = await Wallet.findOne({ user_id: _id });
+		const senderWallet = await Wallet.findOne({ user_id: _id }).populate(
+			'user_id'
+		);
 
 		// find receiver's wallet
-		const receiverWallet = await Wallet.findOne({ address });
+		const receiverWallet = await Wallet.findOne({ address }).populate(
+			'user_id'
+		);
 
 		console.log('Sender wallet', senderWallet);
 
@@ -583,6 +587,7 @@ const controllers = () => {
 				wallet_id: senderWallet._id,
 				amount,
 				currency: 'NGN',
+				to: receiverWallet.user_id,
 			},
 			{
 				type: 'transfer',
@@ -592,6 +597,7 @@ const controllers = () => {
 				wallet_id: receiverWallet._id,
 				amount,
 				currency: 'NGN',
+				from: senderWallet.user_id,
 			},
 		];
 		const savedTransaction = await Transaction.insertMany(transactionData);
