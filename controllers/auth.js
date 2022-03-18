@@ -165,7 +165,8 @@ const controllers = () => {
 			maxAge: 0,
 			httpOnly: true,
 			sameSite: 'lax',
-			secure: true,
+			path: '/',
+			domain: 'netlify.app',
 		});
 		return res.status(200).end();
 	});
