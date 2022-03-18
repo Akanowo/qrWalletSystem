@@ -60,6 +60,7 @@ const controllers = () => {
 			httpOnly: true,
 			sameSite: 'lax',
 			path: '/',
+			domain: 'netlify.app',
 		});
 
 		const userData = { ...user._doc };
