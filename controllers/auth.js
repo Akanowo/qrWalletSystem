@@ -58,9 +58,9 @@ const controllers = () => {
 		res.cookie('access', token, {
 			maxAge: 604800000,
 			httpOnly: true,
-			sameSite: 'lax',
+			sameSite: 'none',
+			secure: true,
 			path: '/',
-			domain: 'netlify.app',
 		});
 
 		const userData = { ...user._doc };
