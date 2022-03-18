@@ -164,9 +164,7 @@ const controllers = () => {
 		res.cookie('access', '', {
 			maxAge: 0,
 			httpOnly: true,
-			sameSite: 'lax',
 			path: '/',
-			domain: 'netlify.app',
 		});
 		return res.status(200).end();
 	});
