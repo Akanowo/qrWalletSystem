@@ -7,15 +7,7 @@ const getSingleTransaction = asyncHandler(async (req, res, next) => {
 
 	if (!id) return next(new ErrorResponse('id is required', 400));
 
-	const transaction = await Transaction.findById(id)
-		.populate({
-			path: 'from',
-			select: 'firstName lastName',
-		})
-		.populate({
-			path: 'to',
-			select: 'vendorName',
-		});
+	const transaction = await Transaction.findById(id).populate('from to');
 
 	if (!transaction)
 		return next(new ErrorResponse('invalid transaction id', 400));
