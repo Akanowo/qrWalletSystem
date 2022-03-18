@@ -162,7 +162,9 @@ const controllers = () => {
 	const logout = asyncHandler(async (req, res, next) => {
 		res.cookie('access', '', {
 			maxAge: 0,
-			path: '/',
+			httpOnly: true,
+			sameSite: 'lax',
+			secure: true,
 		});
 		return res.status(200).end();
 	});

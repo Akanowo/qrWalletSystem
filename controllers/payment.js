@@ -91,7 +91,12 @@ const controllers = () => {
 						[
 							{
 								$set: {
-									balance: { $add: ['$balance', payload.amount - charge] },
+									balance: {
+										$add: [
+											'$balance',
+											payload.amount - transaction.data.app_fee,
+										],
+									},
 								},
 							},
 						],
@@ -210,7 +215,10 @@ const controllers = () => {
 							{
 								$set: {
 									balance: {
-										$add: ['$balance', transaction.data.amount - charge],
+										$add: [
+											'$balance',
+											transaction.data.amount - transaction.data.app_fee,
+										],
 									},
 								},
 							},
@@ -281,7 +289,7 @@ const controllers = () => {
 				};
 				const savedTransaction = await Transaction.create(transactionData);
 
-				const charge = Number.parseInt(
+				const charge = Number.parseFloat(
 					await redisClient.get(`${req.user._id}-flw_charge`)
 				);
 
@@ -296,7 +304,10 @@ const controllers = () => {
 						{
 							$set: {
 								balance: {
-									$add: ['$balance', transaction.data.amount - charge],
+									$add: [
+										'$balance',
+										transaction.data.amount - transaction.data.app_fee,
+									],
 								},
 							},
 						},
@@ -364,7 +375,7 @@ const controllers = () => {
 				};
 				const savedTransaction = await Transaction.create(transactionData);
 
-				const charge = Number.parseInt(
+				const charge = Number.parseFloat(
 					await redisClient.get(`${req.user._id}-flw_charge`)
 				);
 				// update user's wallet balance
@@ -376,7 +387,10 @@ const controllers = () => {
 						{
 							$set: {
 								balance: {
-									$add: ['$balance', transaction.data.amount - charge],
+									$add: [
+										'$balance',
+										transaction.data.amount - transaction.data.app_fee,
+									],
 								},
 							},
 						},
