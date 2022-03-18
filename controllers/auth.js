@@ -164,6 +164,8 @@ const controllers = () => {
 		res.cookie('access', '', {
 			maxAge: 0,
 			httpOnly: true,
+			sameSite: 'none',
+			secure: true,
 			path: '/',
 		});
 		return res.status(200).end();
