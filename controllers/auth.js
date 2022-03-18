@@ -60,6 +60,7 @@ const controllers = () => {
 			httpOnly: true,
 			sameSite: 'none',
 			secure: true,
+			path: '/',
 		});
 
 		const userData = { ...user._doc };
