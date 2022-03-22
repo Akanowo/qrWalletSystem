@@ -14,6 +14,23 @@ const Wallet = require('../models/Wallet');
 const QrCode = require('../models/Qrcode');
 const Transaction = require('../models/Transaction');
 const Account = require('../models/Account');
+const VirtualAccount = require('../models/VirtualAccount');
+
+let cookieOption = {};
+
+if (process.env.NODE_ENV === 'production') {
+	cookieOption = {
+		httpOnly: true,
+		sameSite: 'none',
+		secure: true,
+		path: '/',
+	};
+} else {
+	cookieOption = {
+		httpOnly: true,
+		path: '/',
+	};
+}
 
 const controllers = () => {
 	const handleLogin = asyncHandler(async (req, res, next) => {
@@ -57,10 +74,7 @@ const controllers = () => {
 
 		res.cookie('access', token, {
 			maxAge: 604800000,
-			httpOnly: true,
-			sameSite: 'none',
-			secure: true,
-			path: '/',
+			...cookieOption,
 		});
 
 		const userData = { ...user._doc };
@@ -163,10 +177,7 @@ const controllers = () => {
 	const logout = asyncHandler(async (req, res, next) => {
 		res.cookie('access', '', {
 			maxAge: 0,
-			httpOnly: true,
-			sameSite: 'none',
-			secure: true,
-			path: '/',
+			...cookieOption,
 		});
 		return res.status(200).end();
 	});
@@ -183,10 +194,14 @@ const controllers = () => {
 
 		const account = await Account.findOne({ wallet_id: wallet._id });
 
-		let qrcode;
+		let qrcode, virtualAccount;
 
 		if (type === 'vendor') {
 			qrcode = await QrCode.findOne({ wallet_id: wallet._id });
+		} else {
+			virtualAccount = await VirtualAccount.findOne({ user: _id }).select(
+				'bank_name account_number note'
+			);
 		}
 
 		return res.status(200).json({
@@ -197,6 +212,7 @@ const controllers = () => {
 				qrcode,
 				transactions,
 				account,
+				virtual_account: virtualAccount,
 			},
 		});
 	});

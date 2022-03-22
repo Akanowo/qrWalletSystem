@@ -8,6 +8,7 @@ const {
 	handleTopupUssd,
 	handleTransfer,
 	handleWithdrawal,
+	generateVirtualAccount,
 } = require('../controllers/payment');
 
 router.route('/topup/charge').post(handleTopup);
@@ -18,5 +19,6 @@ router.route('/topup/transfer').post(handleTopupTransfer);
 router.route('/topup/ussd').post(handleTopupUssd);
 router.route('/transfer').post(handleTransfer);
 router.route('/withdraw').post(handleWithdrawal);
+router.route('/generate-vacc').post(generateVirtualAccount);
 
 module.exports = router;

@@ -660,6 +660,90 @@ const controllers = () => {
 		});
 	});
 
+	const generateVirtualAccount = asyncHandler(async (req, res, next) => {
+		const { first_name, last_name, date_of_birth, phone_number, bvn } =
+			req.body;
+
+		console.log(req.body);
+
+		const response = await flwClient.Misc.bvn({ bvn });
+
+		if (!response) {
+			return next(new ErrorResponse('An unexpected error occured', 422));
+		}
+
+		if (response.status !== 'success') {
+			return next(new ErrorResponse(response.message, 422));
+		}
+
+		let detailsMatch = false;
+
+		// match bvn details
+		for (const [key, value] of Object.entries(req.body)) {
+			if (!response.data[key]) {
+				continue;
+			}
+			if (
+				response.data[key].toLowerCase().trim() === value.toLowerCase().trim()
+			) {
+				detailsMatch = true;
+			} else {
+				detailsMatch = false;
+				break;
+			}
+		}
+
+		if (!detailsMatch) {
+			return next(
+				new ErrorResponse('BVN data does not match provided user data', 422)
+			);
+		}
+
+		// Generate virtual account number for user
+
+		const v_acc_details = {
+			email: req.user.email,
+			is_permanent: true,
+			bvn,
+			tx_ref: `FWL-${uuid()}`,
+			phonenumber: phone_number,
+			firstname: first_name,
+			lastname: last_name,
+			narration: `${first_name} ${last_name}`,
+		};
+
+		const vAcc = await flwClient.VirtualAcct.create({ data: v_acc_details });
+
+		if (!vAcc) {
+			return next(
+				new ErrorResponse('An error occured generating account number', 422)
+			);
+		}
+
+		if (vAcc.status !== 'success') {
+			return next(new ErrorResponse(response.message, 422));
+		}
+
+		// save virtual account details to db
+
+		const db_vAcc_details = {
+			id: uuid(),
+			...vAcc.data,
+			user: req.user._id,
+		};
+		const savedVAcc = await VirtualAccount.create(db_vAcc_details);
+
+		return res.status(200).json({
+			status: true,
+			message: 'Account generated successfully',
+			data: {
+				account_number: vAcc.data.account_number,
+				bank_name: vAcc.data.bank_name,
+				note: vAcc.data.note,
+			},
+		});
+	});
+
 	return {
 		handleTopup,
 		handleTopupAuthorization,
@@ -669,6 +753,7 @@ const controllers = () => {
 		handleTopupUssd,
 		handleTransfer,
 		handleWithdrawal,
+		generateVirtualAccount,
 	};
 };
 
