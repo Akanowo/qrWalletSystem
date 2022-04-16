@@ -72,10 +72,10 @@ const controllers = () => {
 		// generate accessToken
 		const token = generateAccessToken(user._id);
 
-		res.cookie('access', token, {
-			maxAge: 604800000,
-			...cookieOption,
-		});
+		// res.cookie('access', token, {
+		// 	maxAge: 604800000,
+		// 	...cookieOption,
+		// });
 
 		const userData = { ...user._doc };
 		delete userData.password;
@@ -85,9 +85,7 @@ const controllers = () => {
 			status: true,
 			message: 'login successful',
 			data: {
-				user: userData,
-				walletDetails,
-				qrcode,
+				access_token: token,
 			},
 		});
 	});

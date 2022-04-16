@@ -4,25 +4,25 @@ const ErrorResponse = require('../utils/errorResponse');
 const asyncHandler = require('./async');
 
 module.exports = asyncHandler(async (req, res, next) => {
-	const { cookies } = req;
+	const { authorization } = req.headers;
 
-	console.log(cookies);
-
-	if (!cookies) {
-		return next(new ErrorResponse('UNAUTHORIZED', 403));
+	if (!authorization) {
+		return next(new ErrorResponse('UNAUTHORIZED', 400));
 	}
 
-	const { access } = cookies;
+	const token = authorization.split(' ')[1];
 
-	if (!access) {
-		return next(new ErrorResponse('UNAUTHORIZED', 403));
+	console.log('TOKEN: ', token);
+
+	if (!token) {
+		return next(new ErrorResponse('UNAUTHORIZED', 400));
 	}
 
 	let payload = {};
 
 	// verify token
 	try {
-		payload = jwt.verify(access, process.env.TOKEN_SECRET);
+		payload = jwt.verify(token, process.env.TOKEN_SECRET);
 	} catch (error) {
 		if (error.name === 'TokenExpiredError') {
 			return next(new ErrorResponse('Token expired', 401));
